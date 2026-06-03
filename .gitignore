@@ -1,0 +1,30 @@
+# Build
+build/
+cmake-build-*/
+
+# Compiled artifacts
+*.o
+*.a
+*.so
+*.out
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.clangd/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Sample data (can be large)
+data/*.itch
