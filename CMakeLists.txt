@@ -80,6 +80,7 @@ FetchContent_MakeAvailable(implot)
 # ─────────────────────────────────────────────
 find_package(SDL2 REQUIRED)
 find_package(OpenGL REQUIRED)
+cmake_policy(SET CMP0167 NEW)
 find_package(Boost REQUIRED)
 
 # ─────────────────────────────────────────────
