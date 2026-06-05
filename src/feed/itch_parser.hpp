@@ -151,6 +151,8 @@ private:
     void parse_order_delete  (const uint8_t* p);
     void parse_order_replace (const uint8_t* p);
     void parse_trade         (const uint8_t* p);
+
+    std::vector<uint8_t> m_leftover;
 };
 
 } // namespace itch

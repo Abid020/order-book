@@ -37,7 +37,7 @@ TEST(ITCHParser, SystemEvent) {
     //   [7-14] timestamp (8 bytes — we use 8 for simplicity)
     //   [15]   event_code
 
-    uint8_t buf[13] = {};
+    uint8_t buf[16] = {};
     write_u16(buf,      11);      // length
     buf[2] = 'S';                 // type
     write_u16(buf + 3,  7);       // stock_locate

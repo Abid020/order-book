@@ -3,14 +3,24 @@
 
 namespace itch {
 
-// ─────────────────────────────────────────────
-//  Main parse loop
-//
-//  ITCH message framing:
+//  ITCH message framing (as per MoldUDP64):
 //    [2 bytes] message length  (does NOT include the 2 length bytes)
 //    [1 byte]  message type
 //    [N bytes] payload
-// ─────────────────────────────────────────────
+
+
+void feed(const uint8_t* incoming, std::size_t len) {
+    // prepend any m_leftover bytes from last call
+    std::vector<uint8_t> buf;
+    buf.insert(buf.end(), m_leftover.begin(), m_leftover.end());
+    buf.insert(buf.end(), incoming, incoming + len);
+
+    // parse returns how many bytes were consumed
+    std::size_t consumed = parser.parse(buf.data(), buf.size());
+
+    // save anything the parser couldn't complete
+    m_leftover.assign(buf.begin() + consumed, buf.end());
+}
 
 std::size_t Parser::parse(const uint8_t* buf, std::size_t len) {
     const uint8_t* cursor = buf;
@@ -32,9 +42,6 @@ std::size_t Parser::parse(const uint8_t* buf, std::size_t len) {
     return static_cast<std::size_t>(cursor - buf);
 }
 
-// ─────────────────────────────────────────────
-//  Dispatch
-// ─────────────────────────────────────────────
 
 void Parser::dispatch(const uint8_t* msg, char type) {
     switch (type) {
@@ -50,14 +57,10 @@ void Parser::dispatch(const uint8_t* msg, char type) {
     }
 }
 
-// ─────────────────────────────────────────────
+/////////////////////////////////////////////////////////////
 //  Per-type parsers
 //  p points at the type byte, so fields start at p+1
-//
-//  Offsets from spec:
-//  https://www.nasdaqtrader.com/content/technicalsupport/
-//  specifications/dataproducts/NQTVITCHSpecification.pdf
-// ─────────────────────────────────────────────
+/////////////////////////////////////////////////////////////
 
 void Parser::parse_system_event(const uint8_t* p) {
     if (!cb_.on_system_event) return;
