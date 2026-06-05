@@ -1,1 +1,149 @@
 #include "itch_parser.hpp"
+#include <cstring>
+
+namespace itch {
+
+// ─────────────────────────────────────────────
+//  Main parse loop
+//
+//  ITCH message framing:
+//    [2 bytes] message length  (does NOT include the 2 length bytes)
+//    [1 byte]  message type
+//    [N bytes] payload
+// ─────────────────────────────────────────────
+
+std::size_t Parser::parse(const uint8_t* buf, std::size_t len) {
+    const uint8_t* cursor = buf;
+    const uint8_t* end    = buf + len;
+
+    while (cursor + 2 <= end) {
+        uint16_t msg_len = read_u16(cursor);
+
+        // Guard: don't process if full message isn't in buffer yet
+        if (cursor + 2 + msg_len > end)
+            break;
+
+        char type = static_cast<char>(cursor[2]);
+        dispatch(cursor + 2, type);   // pass pointer to type byte
+
+        cursor += 2 + msg_len;
+    }
+
+    return static_cast<std::size_t>(cursor - buf);
+}
+
+// ─────────────────────────────────────────────
+//  Dispatch
+// ─────────────────────────────────────────────
+
+void Parser::dispatch(const uint8_t* msg, char type) {
+    switch (type) {
+        case 'S': parse_system_event(msg);   break;
+        case 'A': parse_add_order(msg);      break;
+        case 'F': parse_add_order(msg);      break; // MPID variant, same fields
+        case 'E': parse_order_executed(msg); break;
+        case 'X': parse_order_cancel(msg);   break;
+        case 'D': parse_order_delete(msg);   break;
+        case 'U': parse_order_replace(msg);  break;
+        case 'P': parse_trade(msg);          break;
+        default:  break;  // silently skip unknown types
+    }
+}
+
+// ─────────────────────────────────────────────
+//  Per-type parsers
+//  p points at the type byte, so fields start at p+1
+//
+//  Offsets from spec:
+//  https://www.nasdaqtrader.com/content/technicalsupport/
+//  specifications/dataproducts/NQTVITCHSpecification.pdf
+// ─────────────────────────────────────────────
+
+void Parser::parse_system_event(const uint8_t* p) {
+    if (!cb_.on_system_event) return;
+    SystemEventMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);  // 6-byte timestamp — see note below
+    m.event_code      = static_cast<char>(p[11]);
+    cb_.on_system_event(m);
+}
+
+void Parser::parse_add_order(const uint8_t* p) {
+    if (!cb_.on_add_order) return;
+    AddOrderMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);
+    m.order_ref       = read_u64(p + 11);
+    m.side            = static_cast<char>(p[19]);
+    m.shares          = read_u32(p + 20);
+    std::memcpy(m.stock, p + 24, 8);
+    m.stock[8]        = '\0';
+    m.price           = read_u32(p + 32);
+    cb_.on_add_order(m);
+}
+
+void Parser::parse_order_executed(const uint8_t* p) {
+    if (!cb_.on_order_executed) return;
+    OrderExecutedMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);
+    m.order_ref       = read_u64(p + 11);
+    m.executed_shares = read_u32(p + 19);
+    m.match_number    = read_u64(p + 23);
+    cb_.on_order_executed(m);
+}
+
+void Parser::parse_order_cancel(const uint8_t* p) {
+    if (!cb_.on_order_cancel) return;
+    OrderCancelMsg m{};
+    m.stock_locate      = read_u16(p + 1);
+    m.tracking_number   = read_u16(p + 3);
+    m.timestamp_ns      = read_u64(p + 5);
+    m.order_ref         = read_u64(p + 11);
+    m.cancelled_shares  = read_u32(p + 19);
+    cb_.on_order_cancel(m);
+}
+
+void Parser::parse_order_delete(const uint8_t* p) {
+    if (!cb_.on_order_delete) return;
+    OrderDeleteMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);
+    m.order_ref       = read_u64(p + 11);
+    cb_.on_order_delete(m);
+}
+
+void Parser::parse_order_replace(const uint8_t* p) {
+    if (!cb_.on_order_replace) return;
+    OrderReplaceMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);
+    m.orig_order_ref  = read_u64(p + 11);
+    m.new_order_ref   = read_u64(p + 19);
+    m.shares          = read_u32(p + 27);
+    m.price           = read_u32(p + 31);
+    cb_.on_order_replace(m);
+}
+
+void Parser::parse_trade(const uint8_t* p) {
+    if (!cb_.on_trade) return;
+    TradeMsg m{};
+    m.stock_locate    = read_u16(p + 1);
+    m.tracking_number = read_u16(p + 3);
+    m.timestamp_ns    = read_u64(p + 5);
+    m.order_ref       = read_u64(p + 11);
+    m.side            = static_cast<char>(p[19]);
+    m.shares          = read_u32(p + 20);
+    std::memcpy(m.stock, p + 24, 8);
+    m.stock[8]        = '\0';
+    m.price           = read_u32(p + 32);
+    m.match_number    = read_u64(p + 36);
+    cb_.on_trade(m);
+}
+
+} // namespace itch

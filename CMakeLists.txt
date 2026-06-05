@@ -23,6 +23,7 @@ add_compile_options(
   -Wextra
   -Wpedantic
   -Wno-unused-parameter
+  -include new
   $<$<CONFIG:Release>:-O3>
   $<$<CONFIG:Release>:-march=native>   # enables rdtsc, AVX etc. on your local CPU
   $<$<CONFIG:Debug>:-O0>
@@ -43,7 +44,7 @@ include(FetchContent)
 FetchContent_Declare(
   googletest
   GIT_REPOSITORY https://github.com/google/googletest.git
-  GIT_TAG        v1.14.0
+  GIT_TAG        v1.13.0
 )
 set(INSTALL_GTEST OFF CACHE BOOL "" FORCE)
 FetchContent_MakeAvailable(googletest)
