@@ -61,7 +61,7 @@ TEST(ITCHParser, SystemEvent) {
     };
 
     itch::Parser parser(std::move(cb));
-    parser.parse(full, sizeof(full));
+    parser.feed(full, sizeof(full));
     EXPECT_TRUE(called);
 }
 
@@ -111,7 +111,7 @@ TEST(ITCHParser, AddOrder) {
     };
 
     itch::Parser parser(std::move(cb));
-    parser.parse(buf, BUF_LEN);
+    parser.feed(buf, BUF_LEN);
     EXPECT_TRUE(called);
 }
 
@@ -141,7 +141,7 @@ TEST(ITCHParser, OrderCancel) {
     };
 
     itch::Parser parser(std::move(cb));
-    parser.parse(buf, BUF_LEN);
+    parser.feed(buf, BUF_LEN);
     EXPECT_TRUE(called);
 }
 
@@ -169,7 +169,7 @@ TEST(ITCHParser, OrderDelete) {
     };
 
     itch::Parser parser(std::move(cb));
-    parser.parse(buf, BUF_LEN);
+    parser.feed(buf, BUF_LEN);
     EXPECT_TRUE(called);
 }
 
@@ -188,7 +188,7 @@ TEST(ITCHParser, UnknownTypeSkipped) {
     itch::Parser parser(std::move(cb));
 
     // Should not crash or throw
-    EXPECT_NO_THROW(parser.parse(buf, sizeof(buf)));
+    EXPECT_NO_THROW(parser.feed(buf, sizeof(buf)));
 }
 
 // ─────────────────────────────────────────────
@@ -205,6 +205,6 @@ TEST(ITCHParser, TruncatedBufferSafe) {
     cb.on_add_order = [&](const itch::AddOrderMsg&) { called = true; };
 
     itch::Parser parser(std::move(cb));
-    parser.parse(buf, sizeof(buf));
+    parser.feed(buf, sizeof(buf));
     EXPECT_FALSE(called);  // must not have fired
 }

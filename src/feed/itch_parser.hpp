@@ -134,15 +134,17 @@ class Parser {
 public:
     explicit Parser(Callbacks cb) : cb_(std::move(cb)) {}
 
+    void feed(const uint8_t* incoming, std::size_t len);
+
+private:
+    Callbacks cb_;
+
     // Feed raw bytes into the parser.
     // buf must point to a complete ITCH message stream.
     // Returns number of bytes consumed.
     std::size_t parse(const uint8_t* buf, std::size_t len);
 
-private:
-    Callbacks cb_;
-
-    void dispatch(const uint8_t* msg, char type);
+    void processItchMsg(const uint8_t* msg, char type);
 
     void parse_system_event  (const uint8_t* p);
     void parse_add_order     (const uint8_t* p);

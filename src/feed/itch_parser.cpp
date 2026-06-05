@@ -9,14 +9,14 @@ namespace itch {
 //    [N bytes] payload
 
 
-void feed(const uint8_t* incoming, std::size_t len) {
+void Parser::feed(const uint8_t* incoming, std::size_t len) {
     // prepend any m_leftover bytes from last call
     std::vector<uint8_t> buf;
     buf.insert(buf.end(), m_leftover.begin(), m_leftover.end());
     buf.insert(buf.end(), incoming, incoming + len);
 
     // parse returns how many bytes were consumed
-    std::size_t consumed = parser.parse(buf.data(), buf.size());
+    std::size_t consumed = parse(buf.data(), buf.size());
 
     // save anything the parser couldn't complete
     m_leftover.assign(buf.begin() + consumed, buf.end());
@@ -34,7 +34,7 @@ std::size_t Parser::parse(const uint8_t* buf, std::size_t len) {
             break;
 
         char type = static_cast<char>(cursor[2]);
-        dispatch(cursor + 2, type);   // pass pointer to type byte
+        processItchMsg(cursor + 2, type);   // pass pointer to type byte
 
         cursor += 2 + msg_len;
     }
@@ -43,7 +43,7 @@ std::size_t Parser::parse(const uint8_t* buf, std::size_t len) {
 }
 
 
-void Parser::dispatch(const uint8_t* msg, char type) {
+void Parser::processItchMsg(const uint8_t* msg, char type) {
     switch (type) {
         case 'S': parse_system_event(msg);   break;
         case 'A': parse_add_order(msg);      break;
