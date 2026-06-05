@@ -47,17 +47,17 @@ enum class MsgType : char {
 //  by the parser — consumers never see raw bytes
 // ─────────────────────────────────────────────
 
-struct SystemEventMsg {
+struct MsgHeader {
     uint16_t stock_locate;
     uint16_t tracking_number;
     uint64_t timestamp_ns;
+};
+
+struct SystemEventMsg : MsgHeader {
     char     event_code;     // 'O' open, 'C' close, 'A' accepting orders
 };
 
-struct AddOrderMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct AddOrderMsg : MsgHeader{
     uint64_t order_ref;
     char     side;           // 'B' bid, 'S' ask
     uint32_t shares;
@@ -65,44 +65,29 @@ struct AddOrderMsg {
     uint32_t price;          // price × 10,000  e.g. $150.05 = 1500500
 };
 
-struct OrderExecutedMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct OrderExecutedMsg : MsgHeader{
     uint64_t order_ref;
     uint32_t executed_shares;
     uint64_t match_number;
 };
 
-struct OrderCancelMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct OrderCancelMsg : MsgHeader{
     uint64_t order_ref;
     uint32_t cancelled_shares;
 };
 
-struct OrderDeleteMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct OrderDeleteMsg : MsgHeader{
     uint64_t order_ref;
 };
 
-struct OrderReplaceMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct OrderReplaceMsg : MsgHeader{
     uint64_t orig_order_ref;
     uint64_t new_order_ref;
     uint32_t shares;
     uint32_t price;
 };
 
-struct TradeMsg {
-    uint16_t stock_locate;
-    uint16_t tracking_number;
-    uint64_t timestamp_ns;
+struct TradeMsg : MsgHeader{
     uint64_t order_ref;
     char     side;
     uint32_t shares;
@@ -138,6 +123,16 @@ public:
 
 private:
     Callbacks cb_;
+
+    // Each message constructs first three fields in the same way
+    template<typename T>
+    static T make_msg(const uint8_t* p) {
+        T m{};
+        m.stock_locate    = read_u16(p + 1);
+        m.tracking_number = read_u16(p + 3);
+        m.timestamp_ns    = read_u64(p + 5);
+        return m;
+    }
 
     // Feed raw bytes into the parser.
     // buf must point to a complete ITCH message stream.

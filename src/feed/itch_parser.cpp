@@ -64,20 +64,14 @@ void Parser::processItchMsg(const uint8_t* msg, char type) {
 
 void Parser::parse_system_event(const uint8_t* p) {
     if (!cb_.on_system_event) return;
-    SystemEventMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);  // 6-byte timestamp — see note below
+    auto m = make_msg<SystemEventMsg>(p);  // 6-byte timestamp — see note below
     m.event_code      = static_cast<char>(p[11]);
     cb_.on_system_event(m);
 }
 
 void Parser::parse_add_order(const uint8_t* p) {
     if (!cb_.on_add_order) return;
-    AddOrderMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);
+    auto m = make_msg<AddOrderMsg>(p);
     m.order_ref       = read_u64(p + 11);
     m.side            = static_cast<char>(p[19]);
     m.shares          = read_u32(p + 20);
@@ -89,10 +83,7 @@ void Parser::parse_add_order(const uint8_t* p) {
 
 void Parser::parse_order_executed(const uint8_t* p) {
     if (!cb_.on_order_executed) return;
-    OrderExecutedMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);
+    auto m = make_msg<OrderExecutedMsg>(p);
     m.order_ref       = read_u64(p + 11);
     m.executed_shares = read_u32(p + 19);
     m.match_number    = read_u64(p + 23);
@@ -101,10 +92,7 @@ void Parser::parse_order_executed(const uint8_t* p) {
 
 void Parser::parse_order_cancel(const uint8_t* p) {
     if (!cb_.on_order_cancel) return;
-    OrderCancelMsg m{};
-    m.stock_locate      = read_u16(p + 1);
-    m.tracking_number   = read_u16(p + 3);
-    m.timestamp_ns      = read_u64(p + 5);
+    auto m = make_msg<OrderCancelMsg>(p);
     m.order_ref         = read_u64(p + 11);
     m.cancelled_shares  = read_u32(p + 19);
     cb_.on_order_cancel(m);
@@ -112,20 +100,14 @@ void Parser::parse_order_cancel(const uint8_t* p) {
 
 void Parser::parse_order_delete(const uint8_t* p) {
     if (!cb_.on_order_delete) return;
-    OrderDeleteMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);
+    auto m = make_msg<OrderDeleteMsg>(p);
     m.order_ref       = read_u64(p + 11);
     cb_.on_order_delete(m);
 }
 
 void Parser::parse_order_replace(const uint8_t* p) {
     if (!cb_.on_order_replace) return;
-    OrderReplaceMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);
+    auto m = make_msg<OrderReplaceMsg>(p);
     m.orig_order_ref  = read_u64(p + 11);
     m.new_order_ref   = read_u64(p + 19);
     m.shares          = read_u32(p + 27);
@@ -135,10 +117,7 @@ void Parser::parse_order_replace(const uint8_t* p) {
 
 void Parser::parse_trade(const uint8_t* p) {
     if (!cb_.on_trade) return;
-    TradeMsg m{};
-    m.stock_locate    = read_u16(p + 1);
-    m.tracking_number = read_u16(p + 3);
-    m.timestamp_ns    = read_u64(p + 5);
+    auto m = make_msg<TradeMsg>(p);
     m.order_ref       = read_u64(p + 11);
     m.side            = static_cast<char>(p[19]);
     m.shares          = read_u32(p + 20);
