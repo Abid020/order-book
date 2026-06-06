@@ -12,6 +12,9 @@ namespace itch {
 //  ITCH is big-endian, x86 is little-endian
 // ─────────────────────────────────────────────
 
+inline uint8_t read_u8(const uint8_t* p) {
+    return *p;
+}
 inline uint16_t read_u16(const uint8_t* p) {
     uint16_t v; std::memcpy(&v, p, 2); return ntohs(v);
 }
@@ -28,7 +31,7 @@ inline uint64_t read_u64(const uint8_t* p) {
 //  Message type codes  (ITCH 5.0 spec section 4)
 // ─────────────────────────────────────────────
 
-enum class MsgType : char {
+enum class MsgType : uint8_t {
     SystemEvent       = 'S',
     AddOrder          = 'A',
     AddOrderMPID      = 'F',

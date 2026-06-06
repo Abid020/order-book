@@ -13,7 +13,7 @@ struct Order {
     uint64_t order_ref;
     uint32_t price;
     uint32_t shares;
-    uint8_t     side;
+    char     side;
 };
 
 struct PriceLevel {

@@ -65,7 +65,7 @@ void Parser::processItchMsg(const uint8_t* msg, char type) {
 void Parser::parse_system_event(const uint8_t* p) {
     if (!cb_.on_system_event) return;
     auto m = make_msg<SystemEventMsg>(p);  // 6-byte timestamp — see note below
-    m.event_code      = static_cast<char>(p[11]);
+    m.event_code      = static_cast<char>(read_u8(p + 13));
     cb_.on_system_event(m);
 }
 
@@ -73,7 +73,7 @@ void Parser::parse_add_order(const uint8_t* p) {
     if (!cb_.on_add_order) return;
     auto m = make_msg<AddOrderMsg>(p);
     m.order_ref       = read_u64(p + 11);
-    m.side            = static_cast<char>(p[19]);
+    m.side            = static_cast<char>(read_u8(p + 19));
     m.shares          = read_u32(p + 20);
     std::memcpy(m.stock, p + 24, 8);
     m.stock[8]        = '\0';
@@ -119,7 +119,7 @@ void Parser::parse_trade(const uint8_t* p) {
     if (!cb_.on_trade) return;
     auto m = make_msg<TradeMsg>(p);
     m.order_ref       = read_u64(p + 11);
-    m.side            = static_cast<char>(p[19]);
+    m.side            = static_cast<char>(read_u8(p + 19));
     m.shares          = read_u32(p + 20);
     std::memcpy(m.stock, p + 24, 8);
     m.stock[8]        = '\0';
