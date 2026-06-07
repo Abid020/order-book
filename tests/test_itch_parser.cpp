@@ -23,6 +23,14 @@ static void write_u64(uint8_t* p, uint64_t v) {
     std::memcpy(p,     &hi, 4);
     std::memcpy(p + 4, &lo, 4);
 }
+static void write_u48(uint8_t* p, uint64_t v) {
+    p[0] = (v >> 40) & 0xFF;
+    p[1] = (v >> 32) & 0xFF;
+    p[2] = (v >> 24) & 0xFF;
+    p[3] = (v >> 16) & 0xFF;
+    p[4] = (v >>  8) & 0xFF;
+    p[5] =  v        & 0xFF;
+}
 
 // ─────────────────────────────────────────────
 //  SystemEvent
@@ -42,7 +50,7 @@ TEST(ITCHParser, SystemEvent) {
     buf[2] = 'S';                 // type
     write_u16(buf + 3,  7);       // stock_locate
     write_u16(buf + 5,  42);      // tracking_number
-    write_u64(buf + 7,  999999);  // timestamp_ns
+    write_u48(buf + 7,  999999);  // timestamp_ns
     buf[15] = 'O';                // event_code — market open
 
     // Extend buffer to 16 bytes
@@ -71,16 +79,16 @@ TEST(ITCHParser, SystemEvent) {
 
 TEST(ITCHParser, AddOrder) {
     // Message layout (type 'A', length = 35):
-    //   [0-1]   length
-    //   [2]     type = 'A'
-    //   [3-4]   stock_locate
-    //   [5-6]   tracking_number
-    //   [7-14]  timestamp_ns
-    //   [15-22] order_ref
-    //   [23]    side
-    //   [24-27] shares
-    //   [28-35] stock (8 chars)
-    //   [36-39] price
+// buf[0-1]   MoldUDP64 length      write_u16(buf, MSG_LEN)
+// buf[2]     type = 'A'            buf[2] = 'A'
+// buf[3-4]   stock_locate          write_u16(buf + 3, 1)
+// buf[5-6]   tracking_number       write_u16(buf + 5, 0)
+// buf[7-12]  timestamp (6 bytes)   write_u48(buf + 7, ...)
+// buf[13-20] order_ref (8 bytes)   write_u64(buf + 13, ...)
+// buf[21]    side                  buf[21] = 'B'
+// buf[22-25] shares                write_u32(buf + 22, 100)
+// buf[26-33] stock (8 bytes)       memcpy(buf + 26, ...)
+// buf[34-37] price                 write_u32(buf + 34, ...)
 
     constexpr std::size_t MSG_LEN = 36;
     constexpr std::size_t BUF_LEN = 2 + MSG_LEN;
@@ -90,12 +98,12 @@ TEST(ITCHParser, AddOrder) {
     buf[2] = 'A';
     write_u16(buf + 3,   1);           // stock_locate
     write_u16(buf + 5,   0);           // tracking_number
-    write_u64(buf + 7,   123456789ULL);// timestamp_ns
+    write_u48(buf + 7,   123456789ULL);// timestamp_ns
     write_u64(buf + 13,  987654321ULL);// order_ref
-    buf[23] = 'B';                     // side — bid
-    write_u32(buf + 22,  100);         // shares
+    buf[21] = 'B';                     // side — bid
+    write_u32(buf + 22,  100u);         // shares
     std::memcpy(buf + 26, "AAPL    ", 8); // stock (space padded)
-    write_u32(buf + 34,  1500500);     // price = $150.05 × 10000
+    write_u32(buf + 34,  1500500u);     // price = $150.05 × 10000
 
     itch::Callbacks cb;
     bool called = false;
@@ -128,7 +136,7 @@ TEST(ITCHParser, OrderCancel) {
     buf[2] = 'X';
     write_u16(buf + 3,   5);
     write_u16(buf + 5,   0);
-    write_u64(buf + 7,   111222333ULL);
+    write_u48(buf + 7,   111222333ULL);
     write_u64(buf + 13,  555666777ULL); // order_ref
     write_u32(buf + 21,  50);           // cancelled_shares
 
@@ -158,7 +166,7 @@ TEST(ITCHParser, OrderDelete) {
     buf[2] = 'D';
     write_u16(buf + 3,   2);
     write_u16(buf + 5,   0);
-    write_u64(buf + 7,   999ULL);
+    write_u48(buf + 7,   999ULL);
     write_u64(buf + 13,  112233ULL); // order_ref
 
     itch::Callbacks cb;

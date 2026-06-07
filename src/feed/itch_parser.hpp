@@ -26,7 +26,14 @@ inline uint64_t read_u64(const uint8_t* p) {
     return (static_cast<uint64_t>(ntohl(v & 0xFFFFFFFF)) << 32)
            | ntohl(v >> 32);
 }
-
+inline uint64_t read_u48(const uint8_t* p) {
+    return (static_cast<uint64_t>(p[0]) << 40)
+         | (static_cast<uint64_t>(p[1]) << 32)
+         | (static_cast<uint64_t>(p[2]) << 24)
+         | (static_cast<uint64_t>(p[3]) << 16)
+         | (static_cast<uint64_t>(p[4]) <<  8)
+         |  static_cast<uint64_t>(p[5]);
+}
 // ─────────────────────────────────────────────
 //  Message type codes  (ITCH 5.0 spec section 4)
 // ─────────────────────────────────────────────
@@ -133,7 +140,7 @@ private:
         T m{};
         m.stock_locate    = read_u16(p + 1);
         m.tracking_number = read_u16(p + 3);
-        m.timestamp_ns    = read_u64(p + 5);
+        m.timestamp_ns    = read_u48(p + 5);
         return m;
     }
 

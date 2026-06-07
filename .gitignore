@@ -28,3 +28,6 @@ Thumbs.db
 
 # Sample data (can be large)
 data/*.itch
+Testing/Temporary/CTestCostData.txt
+.gitignore
+Testing/Temporary/LastTest.log
