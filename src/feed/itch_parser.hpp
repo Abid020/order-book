@@ -27,12 +27,11 @@ inline uint64_t read_u64(const uint8_t* p) {
            | ntohl(v >> 32);
 }
 inline uint64_t read_u48(const uint8_t* p) {
-    return (static_cast<uint64_t>(p[0]) << 40)
-         | (static_cast<uint64_t>(p[1]) << 32)
-         | (static_cast<uint64_t>(p[2]) << 24)
-         | (static_cast<uint64_t>(p[3]) << 16)
-         | (static_cast<uint64_t>(p[4]) <<  8)
-         |  static_cast<uint64_t>(p[5]);
+    uint32_t hi; uint16_t lo;
+    std::memcpy(&hi, p,     4);
+    std::memcpy(&lo, p + 4, 2);
+    return (static_cast<uint64_t>(ntohl(hi)) << 16)
+         |  static_cast<uint64_t>(ntohs(lo));
 }
 // ─────────────────────────────────────────────
 //  Message type codes  (ITCH 5.0 spec section 4)
