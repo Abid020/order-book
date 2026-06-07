@@ -1,5 +1,5 @@
-#include "./book/order_book.hpp"
-#include "./feed/itch_parser.hpp"
+#include "feed/itch_parser.hpp"
+#include "book/order_book.hpp"
 
 int main() {
     book::OrderBook book;

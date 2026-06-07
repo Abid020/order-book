@@ -82,7 +82,7 @@ TEST(ITCHParser, AddOrder) {
     //   [28-35] stock (8 chars)
     //   [36-39] price
 
-    constexpr std::size_t MSG_LEN = 35;
+    constexpr std::size_t MSG_LEN = 36;
     constexpr std::size_t BUF_LEN = 2 + MSG_LEN;
     uint8_t buf[BUF_LEN] = {};
 
@@ -91,11 +91,11 @@ TEST(ITCHParser, AddOrder) {
     write_u16(buf + 3,   1);           // stock_locate
     write_u16(buf + 5,   0);           // tracking_number
     write_u64(buf + 7,   123456789ULL);// timestamp_ns
-    write_u64(buf + 15,  987654321ULL);// order_ref
+    write_u64(buf + 13,  987654321ULL);// order_ref
     buf[23] = 'B';                     // side — bid
-    write_u32(buf + 24,  100);         // shares
-    std::memcpy(buf + 28, "AAPL    ", 8); // stock (space padded)
-    write_u32(buf + 36,  1500500);     // price = $150.05 × 10000
+    write_u32(buf + 22,  100);         // shares
+    std::memcpy(buf + 26, "AAPL    ", 8); // stock (space padded)
+    write_u32(buf + 34,  1500500);     // price = $150.05 × 10000
 
     itch::Callbacks cb;
     bool called = false;
@@ -120,7 +120,7 @@ TEST(ITCHParser, AddOrder) {
 // ─────────────────────────────────────────────
 
 TEST(ITCHParser, OrderCancel) {
-    constexpr std::size_t MSG_LEN = 22;
+    constexpr std::size_t MSG_LEN = 23;
     constexpr std::size_t BUF_LEN = 2 + MSG_LEN;
     uint8_t buf[BUF_LEN] = {};
 
@@ -129,8 +129,8 @@ TEST(ITCHParser, OrderCancel) {
     write_u16(buf + 3,   5);
     write_u16(buf + 5,   0);
     write_u64(buf + 7,   111222333ULL);
-    write_u64(buf + 15,  555666777ULL); // order_ref
-    write_u32(buf + 23,  50);           // cancelled_shares
+    write_u64(buf + 13,  555666777ULL); // order_ref
+    write_u32(buf + 21,  50);           // cancelled_shares
 
     itch::Callbacks cb;
     bool called = false;
@@ -150,7 +150,7 @@ TEST(ITCHParser, OrderCancel) {
 // ─────────────────────────────────────────────
 
 TEST(ITCHParser, OrderDelete) {
-    constexpr std::size_t MSG_LEN = 18;
+    constexpr std::size_t MSG_LEN = 19;
     constexpr std::size_t BUF_LEN = 2 + MSG_LEN;
     uint8_t buf[BUF_LEN] = {};
 
@@ -159,7 +159,7 @@ TEST(ITCHParser, OrderDelete) {
     write_u16(buf + 3,   2);
     write_u16(buf + 5,   0);
     write_u64(buf + 7,   999ULL);
-    write_u64(buf + 15,  112233ULL); // order_ref
+    write_u64(buf + 13,  112233ULL); // order_ref
 
     itch::Callbacks cb;
     bool called = false;
