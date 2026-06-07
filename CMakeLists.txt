@@ -128,6 +128,8 @@ add_library(order_book_core STATIC
 )
 target_include_directories(order_book_core PUBLIC
   ${CMAKE_SOURCE_DIR}/src
+  ${CMAKE_SOURCE_DIR}/src/book
+  ${CMAKE_SOURCE_DIR}/src/feed
   ${Boost_INCLUDE_DIRS}
 )
 target_compile_features(order_book_core PUBLIC cxx_std_20)
