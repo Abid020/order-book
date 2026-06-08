@@ -18,7 +18,7 @@ struct Order {
 
 struct PriceLevel {
     uint64_t             total_quantity;
-    std::deque<uint64_t> order_refs;
+    std::deque<uint64_t> order_refs; // FIFO arrival
 };
 
 class OrderBook {
@@ -46,6 +46,7 @@ private:
     std::unordered_map<uint64_t, Order>                    orders_;
 
     void remove_from_level(const Order& order);
+    void reduce_level(const Order& order, uint32_t qty);
 };
 
 } // namespace book
