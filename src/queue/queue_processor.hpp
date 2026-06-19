@@ -1,6 +1,6 @@
 #pragma once
 
-#include "book_event.hpp"
+#include "m_bookevent.hpp"
 #include "spsc_queue.hpp"
 #include "book/order_book.hpp"
 #include "feed/itch_parser.hpp"
@@ -24,26 +24,26 @@ template<std::size_t Capacity = 65536>
 class QueueProcessor {
 public:
     explicit QueueProcessor(book::OrderBook& book)
-        : book_(book) {}
+        : m_book(book) {}
 
     // Build callbacks that push onto the queue
     itch::Callbacks make_callbacks() {
         itch::Callbacks cb;
 
         cb.on_add_order = [this](const itch::AddOrderMsg& m) {
-            while (!queue_.push(BookEvent{m})) {}  // spin if full
+            while (!m_queue.push(BookEvent{m})) {}  // spin if full
         };
         cb.on_order_cancel = [this](const itch::OrderCancelMsg& m) {
-            while (!queue_.push(BookEvent{m})) {}
+            while (!m_queue.push(BookEvent{m})) {}
         };
         cb.on_order_delete = [this](const itch::OrderDeleteMsg& m) {
-            while (!queue_.push(BookEvent{m})) {}
+            while (!m_queue.push(BookEvent{m})) {}
         };
         cb.on_order_executed = [this](const itch::OrderExecutedMsg& m) {
-            while (!queue_.push(BookEvent{m})) {}
+            while (!m_queue.push(BookEvent{m})) {}
         };
         cb.on_order_replace = [this](const itch::OrderReplaceMsg& m) {
-            while (!queue_.push(BookEvent{m})) {}
+            while (! .push(BookEvent{m})) {}
         };
 
         return cb;
@@ -51,7 +51,7 @@ public:
 
     // Drain the queue and apply events to the book
     void process_all() {
-        while (auto event = queue_.pop()) {
+        while (auto event = m_queue.pop()) {
             std::visit([this](const auto& msg) {
                 apply(msg);
             }, *event);
@@ -60,7 +60,7 @@ public:
 
     // Process a single event if available
     bool process_one() {
-        auto event = queue_.pop();
+        auto event = m_queue.pop();
         if (!event) return false;
         std::visit([this](const auto& msg) {
             apply(msg);
@@ -68,18 +68,18 @@ public:
         return true;
     }
 
-    bool empty() const { return queue_.empty(); }
+    bool empty() const { return m_queue.empty(); }
 
 private:
-    book::OrderBook&              book_;
-    SpscQueue<BookEvent, Capacity> queue_;
+    book::OrderBook&              m_book;
+    SpscQueue<BookEvent, Capacity> m_queue;
 
     // std::visit dispatches to the right overload
-    void apply(const itch::AddOrderMsg&      m) { book_.add_order(m);     }
-    void apply(const itch::OrderCancelMsg&   m) { book_.cancel_order(m);  }
-    void apply(const itch::OrderDeleteMsg&   m) { book_.delete_order(m);  }
-    void apply(const itch::OrderExecutedMsg& m) { book_.execute_order(m); }
-    void apply(const itch::OrderReplaceMsg&  m) { book_.replace_order(m); }
+    void apply(const itch::AddOrderMsg&      m) { m_book.add_order(m);     }
+    void apply(const itch::OrderCancelMsg&   m) { m_book.cancel_order(m);  }
+    void apply(const itch::OrderDeleteMsg&   m) { m_book.delete_order(m);  }
+    void apply(const itch::OrderExecutedMsg& m) { m_book.execute_order(m); }
+    void apply(const itch::OrderReplaceMsg&  m) { m_book.replace_order(m); }
 };
 
 } // namespace queue

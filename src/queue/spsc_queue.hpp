@@ -7,76 +7,64 @@
 
 namespace queue {
 
-// ─────────────────────────────────────────────
-//  Single Producer Single Consumer lock-free
-//  ring buffer queue.
-//
-//  One thread calls push() — the parser.
-//  One thread calls pop()  — the order book.
-//  Never call push/pop from the same thread.
-//
-//  Capacity must be a power of two — allows
-//  cheap modulo via bitmask instead of division.
-// ─────────────────────────────────────────────
-
 template<typename T, std::size_t Capacity>
 class SpscQueue {
     static_assert((Capacity & (Capacity - 1)) == 0,
         "Capacity must be a power of two");
 
 public:
-    SpscQueue() : head_(0), tail_(0) {}
+    SpscQueue() : m_head(0), m_tail(0) {}
 
-    // Called by producer thread only
+    // Called by producer (parser) thread only
     bool push(const T& item) {
-        const std::size_t tail = tail_.load(std::memory_order_relaxed);
-        const std::size_t next = (tail + 1) & mask_;
+        const std::size_t tail = m_tail.load(std::memory_order_relaxed);
+        const std::size_t next = (tail + 1) & m_mask;
 
         // Queue is full if next write position == head
-        if (next == head_.load(std::memory_order_acquire))
+        if (next == m_head.load(std::memory_order_acquire))
             return false;
 
-        buffer_[tail] = item;
+        m_buffer[tail] = item;
 
-        // Release — ensures buffer_[tail] write is visible
-        // to consumer before tail_ update is visible
-        tail_.store(next, std::memory_order_release);
+        // Release — ensures m_buffer[tail] write is visible
+        // to consumer before m_tail update is visible
+        m_tail.store(next, std::memory_order_release);
         return true;
     }
 
-    // Called by consumer thread only
+    // Called by consumer (order-book) thread only
     std::optional<T> pop() {
-        const std::size_t head = head_.load(std::memory_order_relaxed);
+        const std::size_t head = m_head.load(std::memory_order_relaxed);
 
         // Queue is empty if head == tail
-        if (head == tail_.load(std::memory_order_acquire))
+        if (head == m_tail.load(std::memory_order_acquire))
             return std::nullopt;
 
-        T item = buffer_[head];
+        T item = m_buffer[head];
 
-        // Release — ensures buffer_[head] read is complete
-        // before head_ update is visible to producer
-        head_.store((head + 1) & mask_, std::memory_order_release);
+        // Release — ensures m_buffer[head] read is complete
+        // before m_head update is visible to producer
+        m_head.store((head + 1) & m_mask, std::memory_order_release);
         return item;
     }
 
     bool empty() const {
-        return head_.load(std::memory_order_acquire) ==
-               tail_.load(std::memory_order_acquire);
+        return m_head.load(std::memory_order_acquire) ==
+               m_tail.load(std::memory_order_acquire);
     }
 
     std::size_t size() const {
-        const std::size_t tail = tail_.load(std::memory_order_acquire);
-        const std::size_t head = head_.load(std::memory_order_acquire);
-        return (tail - head) & mask_;
+        const std::size_t tail = m_tail.load(std::memory_order_acquire);
+        const std::size_t head = m_head.load(std::memory_order_acquire);
+        return (tail - head) & m_mask;
     }
 
     static constexpr std::size_t capacity() { return Capacity; }
 
 private:
     // ── Cache line padding ────────────────────
-    // head_ is written by the consumer and read
-    // by the producer. tail_ is written by the
+    // m_head is written by the consumer and read
+    // by the producer. m_tail is written by the
     // producer and read by the consumer. Padding
     // them to separate cache lines prevents false
     // sharing — where two cores invalidate each
@@ -84,12 +72,12 @@ private:
     // accessing different variables.
 
     static constexpr std::size_t cache_line = 64;
-    static constexpr std::size_t mask_      = Capacity - 1;
+    static constexpr std::size_t m_mask      = Capacity - 1;
 
-    alignas(cache_line) std::atomic<std::size_t> head_;
-    alignas(cache_line) std::atomic<std::size_t> tail_;
+    alignas(cache_line) std::atomic<std::size_t> m_head;
+    alignas(cache_line) std::atomic<std::size_t> m_tail;
 
-    std::array<T, Capacity> buffer_;
+    std::array<T, Capacity> m_buffer;
 };
 
 } // namespace queue

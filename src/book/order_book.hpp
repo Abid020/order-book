@@ -29,21 +29,21 @@ public:
     void execute_order(const itch::OrderExecutedMsg& m);
     void replace_order(const itch::OrderReplaceMsg& m);
 
-    const std::map<uint32_t, PriceLevel, std::greater<uint32_t>>& bids() const { return bids_; }
-    const std::map<uint32_t, PriceLevel>&                         asks() const { return asks_; }
+    const std::map<uint32_t, PriceLevel, std::greater<uint32_t>>& bids() const { return m_bids; }
+    const std::map<uint32_t, PriceLevel>&                         asks() const { return m_asks; }
 
     uint32_t best_bid() const;
     uint32_t best_ask() const;
     uint64_t total_bid_quantity() const;
     uint64_t total_ask_quantity() const;
 
-    std::size_t order_count() const { return orders_.size(); }
+    std::size_t order_count() const { return m_orders.size(); }
     void clear();
 
 private:
-    std::map<uint32_t, PriceLevel, std::greater<uint32_t>> bids_;
-    std::map<uint32_t, PriceLevel>                         asks_;
-    std::unordered_map<uint64_t, Order>                    orders_;
+    std::map<uint32_t, PriceLevel, std::greater<uint32_t>> m_bids;
+    std::map<uint32_t, PriceLevel>                         m_asks;
+    std::unordered_map<uint64_t, Order>                    m_orders;
 
     void remove_from_level(const Order& order);
     void reduce_level(const Order& order, uint32_t qty);
